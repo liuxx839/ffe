@@ -17,7 +17,7 @@ def main():
     # Display field names requirement in the top left corner
     required_fields = ["'MR_Pos'", "'MR_Name'", "'MR_Base City'", "'省份'", "'城市'", "' 24Q2 Final Target'", "'医院潜力'", "'2023Q2 Actual'", "'DM_POS'", "'DM_Name'", "'RM_POS'", "'RM_Name'", "'PT_Group'", "'2023Q1 Actual'", "'2024Q1 Actual'"]
     field_names = ", ".join(required_fields)
-    st.sidebar.markdown(f"您的数据需包含 {field_names} 这些字段，字段名严格遵循。")
+    st.sidebar.markdown(f"您的数据需包含 {field_names} 这些字段，字段名严格遵循上述名称。")
 
     # Create sidebar for user inputs
     uploaded_file = st.sidebar.file_uploader("Upload your Excel file", type=["xlsx"])
