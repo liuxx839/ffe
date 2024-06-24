@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from ffe_groundrules import evaluate_mr_city_coverage, check_personnel_deployment, evaluate_dm_deployment, evaluate_rm_deployment, calculate_pt_group_metrics, evaluate_mr_performance,evaluate_dm_city_coverage
+from ffe_groundrules import evaluate_mr_city_coverage, check_personnel_deployment, evaluate_dm_deployment, evaluate_rm_deployment, calculate_pt_group_metrics, evaluate_mr_performance,evaluate_dm_city_coverage,evaluate_rm_coverage
 
 # Load and preprocess data
 def load_data(file):
@@ -31,7 +31,7 @@ def main():
         result_df = None
 
         # Create a selection box for the user to choose the evaluation module
-        evaluation_module = st.sidebar.selectbox("Select evaluation module", ["MR City Coverage", "Personnel Deployment", "DM Deployment", "RM Deployment", "PT Group Metrics", "MR Performance","DM City Coverage"])
+        evaluation_module = st.sidebar.selectbox("Select evaluation module", ["MR City Coverage", "Personnel Deployment", "DM Deployment", "RM Deployment", "PT Group Metrics", "MR Performance","DM City Coverage","RM Coverage"])
 
         # Perform evaluation based on the selected module
         if evaluation_module == "MR City Coverage":
@@ -49,6 +49,8 @@ def main():
             result_df = evaluate_mr_performance(df_orig, pt_group_metrics)
         elif evaluation_module == "DM City Coverage":
             result_df = evaluate_dm_city_coverage(df_orig)
+        elif evaluation_module == "RM Coverage":
+            result_df = evaluate_rm_coverage(df_orig)
 
         # Display the result DataFrame if result_df is not None
         if result_df is not None:
