@@ -229,4 +229,59 @@ def evaluate_mr_performance(df, pt_group_metrics):
 
     return mr_data
 
-
+def evaluate_dm_city_coverage(df):
+    """
+    Evaluate the city coverage and base city alignment for each District Manager (DM).
+    
+    Args:
+        df (pandas.DataFrame): The input DataFrame containing the required columns.
+    
+    Returns:
+        pandas.DataFrame: A DataFrame containing the DM information, city coverage, top cities, 
+        base city alignment evaluation, and cross-province coverage.
+    """
+    # Extract the required columns for each DM
+    dm_data = df[['DM_POS', 'DM_Name', 'DM_Base City', 'DM_Base Province', '省份', '城市', 'R6M Sales Actual', '医院潜力', '医院编码']].copy()
+    
+    # Remove duplicates based on DM_POS, 城市, and 医院编码 to get unique hospital potential for each city
+    dm_data_unique = dm_data.drop_duplicates(subset=['DM_POS', '城市', '医院编码'])
+    
+    # Calculate the sum of R6M Sales Actual and unique hospital potential for each DM in different cities
+    dm_city_summary = dm_data_unique.groupby(['DM_POS', 'DM_Name', 'DM_Base Province', '省份', '城市', 'DM_Base City']).agg({
+        'R6M Sales Actual': 'sum',
+        '医院潜力': 'sum'
+    }).reset_index()
+    
+    # Count the number of cities covered by each DM
+    dm_city_count = dm_city_summary.groupby('DM_POS')['城市'].nunique().reset_index()
+    dm_city_count.columns = ['DM_POS', 'num_cities_covered']
+    
+    # Find the city with the highest R6M Sales Actual and the city with the highest hospital potential for each DM
+    dm_top_sales_city = dm_city_summary.loc[dm_city_summary.groupby('DM_POS')['R6M Sales Actual'].idxmax()][['DM_POS', '城市']]
+    dm_top_sales_city.columns = ['DM_POS', 'top_sales_city']
+    
+    dm_top_potential_city = dm_city_summary.loc[dm_city_summary.groupby('DM_POS')['医院潜力'].idxmax()][['DM_POS', '城市']]
+    dm_top_potential_city.columns = ['DM_POS', 'top_potential_city']
+    
+    # Merge the city coverage, top cities, and base city information
+    dm_evaluation = dm_city_summary.merge(dm_city_count, on='DM_POS', how='left')
+    dm_evaluation = dm_evaluation.merge(dm_top_sales_city, on='DM_POS', how='left')
+    dm_evaluation = dm_evaluation.merge(dm_top_potential_city, on='DM_POS', how='left')
+    
+    # Evaluate the base city alignment
+    dm_evaluation['base_city_aligned'] = 'No'
+    dm_evaluation.loc[dm_evaluation['DM_Base City'] == dm_evaluation['top_sales_city'], 'base_city_aligned'] = 'Yes'
+    dm_evaluation.loc[dm_evaluation['DM_Base City'] == dm_evaluation['top_potential_city'], 'base_city_aligned'] = 'Yes'
+    
+    # Check if the DM covers cities outside their base province
+    dm_evaluation['cross_province'] = dm_evaluation.apply(lambda row: 'Yes' if row['DM_Base Province'] != row['省份'] else 'No', axis=1)
+    
+    # Calculate cross_province_all
+    cross_province_all = dm_evaluation.groupby('DM_POS')['cross_province'].apply(lambda x: 'Yes' if 'Yes' in x.values else 'No').reset_index()
+    cross_province_all.columns = ['DM_POS', 'cross_province_all']
+    
+    # Merge cross_province_all into dm_evaluation
+    dm_evaluation = dm_evaluation.merge(cross_province_all, on='DM_POS', how='left')
+    
+    return dm_evaluation[['DM_POS', 'DM_Name', 'DM_Base City', 'DM_Base Province', '省份', '城市', 'R6M Sales Actual', '医院潜力', 
+                          'num_cities_covered', 'top_sales_city', 'top_potential_city', 'base_city_aligned', 'cross_province', 'cross_province_all']]
