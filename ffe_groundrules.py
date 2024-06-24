@@ -243,14 +243,14 @@ def evaluate_dm_city_coverage(df):
     # Extract the required columns for each DM
     dm_data = df[['DM_POS', 'DM_Name', 'DM_Base City', 'DM_Base Province', '省份', '城市', 'R6M Sales Actual', '医院潜力', '医院编码']].copy()
     
-    # Remove duplicates based on DM_POS, 城市, and 医院编码 to get unique hospital potential for each city
-    dm_data_unique = dm_data.drop_duplicates(subset=['DM_POS', '城市', '医院编码'])
+    # Calculate the sum of R6M Sales Actual for each DM in different cities (without deduplication)
+    sales_summary = dm_data.groupby(['DM_POS', 'DM_Name', 'DM_Base Province', '省份', '城市', 'DM_Base City'])['R6M Sales Actual'].sum().reset_index()
     
-    # Calculate the sum of R6M Sales Actual and unique hospital potential for each DM in different cities
-    dm_city_summary = dm_data_unique.groupby(['DM_POS', 'DM_Name', 'DM_Base Province', '省份', '城市', 'DM_Base City']).agg({
-        'R6M Sales Actual': 'sum',
-        '医院潜力': 'sum'
-    }).reset_index()
+    # Calculate the sum of unique hospital potential for each DM in different cities
+    potential_summary = dm_data.drop_duplicates(subset=['DM_POS', '城市', '医院编码']).groupby(['DM_POS', 'DM_Name', 'DM_Base Province', '省份', '城市', 'DM_Base City'])['医院潜力'].sum().reset_index()
+    
+    # Merge sales and potential summaries
+    dm_city_summary = sales_summary.merge(potential_summary, on=['DM_POS', 'DM_Name', 'DM_Base Province', '省份', '城市', 'DM_Base City'], how='outer')
     
     # Count the number of cities covered by each DM
     dm_city_count = dm_city_summary.groupby('DM_POS')['城市'].nunique().reset_index()
