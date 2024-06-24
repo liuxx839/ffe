@@ -15,7 +15,7 @@ def main():
     st.title('Medical Representatives Evaluation App')
 
     # Display field names requirement in the top left corner
-    required_fields = ["'MR_Pos'", "'MR_Name'", "'MR_Base City'", "'省份'", "'城市'", "' 24Q2 Final Target'", "'R6M Sales Actual'", "'医院潜力'", "'医院编码'", "'2023Q2 Actual'", "'DM_POS'", "'DM_Name'", "'RM_POS'", "'RM_Name'", "'PT_Group'", "'2023Q1 Actual'", "'2024Q1 Actual'"]
+    required_fields = ["'MR_Pos'", "'MR_Name'", "'MR_Base City'", "'省份'", "'城市'", "' 24Q2 Final Target'", "'R6M Sales Actual'", "'医院潜力'", "'医院编码'", "'2023Q2 Actual'", "'DM_POS'", "'DM_Name'", "'RM_POS'", "'RM_Name'","'RM_Base City'", "'RM_Base Province'", "'PT_Group'", "'2023Q1 Actual'", "'2024Q1 Actual'"]
     field_names = ", ".join(required_fields)
     st.sidebar.markdown(f"您的数据需包含 {field_names} 这些字段，字段名严格遵循上述名称。")
 
