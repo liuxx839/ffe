@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from ffe_groundrules import evaluate_mr_city_coverage, check_personnel_deployment, evaluate_dm_deployment, evaluate_rm_deployment, calculate_pt_group_metrics, evaluate_mr_performance
+from ffe_groundrules import evaluate_mr_city_coverage, check_personnel_deployment, evaluate_dm_deployment, evaluate_rm_deployment, calculate_pt_group_metrics, evaluate_mr_performance,evaluate_dm_city_coverage
 
 # Load and preprocess data
 def load_data(file):
@@ -15,7 +15,7 @@ def main():
     st.title('Medical Representatives Evaluation App')
 
     # Display field names requirement in the top left corner
-    required_fields = ["'MR_Pos'", "'MR_Name'", "'MR_Base City'", "'省份'", "'城市'", "' 24Q2 Final Target'", "'医院潜力'", "'2023Q2 Actual'", "'DM_POS'", "'DM_Name'", "'RM_POS'", "'RM_Name'", "'PT_Group'", "'2023Q1 Actual'", "'2024Q1 Actual'"]
+    required_fields = ["'MR_Pos'", "'MR_Name'", "'MR_Base City'", "'省份'", "'城市'", "' 24Q2 Final Target'", "'R6M Sales Actual'", "'医院潜力'", "'医院编码'", "'2023Q2 Actual'", "'DM_POS'", "'DM_Name'", "'RM_POS'", "'RM_Name'", "'PT_Group'", "'2023Q1 Actual'", "'2024Q1 Actual'"]
     field_names = ", ".join(required_fields)
     st.sidebar.markdown(f"您的数据需包含 {field_names} 这些字段，字段名严格遵循上述名称。")
 
@@ -31,7 +31,7 @@ def main():
         result_df = None
 
         # Create a selection box for the user to choose the evaluation module
-        evaluation_module = st.sidebar.selectbox("Select evaluation module", ["MR City Coverage", "Personnel Deployment", "DM Deployment", "RM Deployment", "PT Group Metrics", "MR Performance"])
+        evaluation_module = st.sidebar.selectbox("Select evaluation module", ["MR City Coverage", "Personnel Deployment", "DM Deployment", "RM Deployment", "PT Group Metrics", "MR Performance","DM City Coverage"])
 
         # Perform evaluation based on the selected module
         if evaluation_module == "MR City Coverage":
@@ -47,6 +47,8 @@ def main():
         elif evaluation_module == "MR Performance":
             pt_group_metrics = calculate_pt_group_metrics(df_orig)
             result_df = evaluate_mr_performance(df_orig, pt_group_metrics)
+        elif evaluation_module == "DM City Coverage":
+            result_df = evaluate_dm_city_coverage(df_orig)
 
         # Display the result DataFrame if result_df is not None
         if result_df is not None:
