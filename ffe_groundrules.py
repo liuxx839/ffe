@@ -285,3 +285,69 @@ def evaluate_dm_city_coverage(df):
     
     return dm_evaluation[['DM_POS', 'DM_Name', 'DM_Base City', 'DM_Base Province', '省份', '城市', 'R6M Sales Actual', '医院潜力', 
                           'num_cities_covered', 'top_sales_city', 'top_potential_city', 'base_city_aligned', 'cross_province', 'cross_province_all']]
+
+
+
+def evaluate_rm_coverage(df):
+    """
+    Evaluate the coverage and alignment for each Regional Manager (RM) at the province level.
+    
+    Args:
+        df (pandas.DataFrame): The input DataFrame containing the required columns.
+    
+    Returns:
+        pandas.DataFrame: A DataFrame containing the RM information, coverage, top provinces, 
+        base province and city alignment evaluation, and province sharing.
+    """
+    # Extract the required columns for each RM
+    rm_data = df[['RM_POS', 'RM_Name', 'RM_Base City', 'RM_Base Province', '省份', 'R6M Sales Actual', '医院潜力', '医院编码']].copy()
+    
+    # Calculate the sum of R6M Sales Actual for each RM in different provinces (without deduplication)
+    sales_summary = rm_data.groupby(['RM_POS', 'RM_Name', 'RM_Base City', 'RM_Base Province', '省份'])['R6M Sales Actual'].sum().reset_index()
+    
+    # Calculate the sum of unique hospital potential for each RM in different provinces
+    potential_summary = rm_data.drop_duplicates(subset=['RM_POS', '省份', '医院编码']).groupby(['RM_POS', 'RM_Name', 'RM_Base City', 'RM_Base Province', '省份'])['医院潜力'].sum().reset_index()
+    
+    # Merge sales and potential summaries
+    rm_province_summary = sales_summary.merge(potential_summary, on=['RM_POS', 'RM_Name', 'RM_Base City', 'RM_Base Province', '省份'], how='outer')
+    
+    # Count the number of provinces covered by each RM
+    rm_province_count = rm_province_summary.groupby('RM_POS')['省份'].nunique().reset_index()
+    rm_province_count.columns = ['RM_POS', 'num_provinces_covered']
+    
+    # Find the province with the highest R6M Sales Actual and the province with the highest hospital potential for each RM
+    rm_top_sales_province = rm_province_summary.loc[rm_province_summary.groupby('RM_POS')['R6M Sales Actual'].idxmax()][['RM_POS', '省份']]
+    rm_top_sales_province.columns = ['RM_POS', 'top_sales_province']
+    
+    rm_top_potential_province = rm_province_summary.loc[rm_province_summary.groupby('RM_POS')['医院潜力'].idxmax()][['RM_POS', '省份']]
+    rm_top_potential_province.columns = ['RM_POS', 'top_potential_province']
+    
+    # Merge the province coverage, top provinces, and base province information
+    rm_evaluation = rm_province_summary.merge(rm_province_count, on='RM_POS', how='left')
+    rm_evaluation = rm_evaluation.merge(rm_top_sales_province, on='RM_POS', how='left')
+    rm_evaluation = rm_evaluation.merge(rm_top_potential_province, on='RM_POS', how='left')
+    
+    # Evaluate the base province alignment
+    rm_evaluation['base_province_aligned'] = 'No'
+    rm_evaluation.loc[rm_evaluation['RM_Base Province'] == rm_evaluation['top_sales_province'], 'base_province_aligned'] = 'Yes'
+    rm_evaluation.loc[rm_evaluation['RM_Base Province'] == rm_evaluation['top_potential_province'], 'base_province_aligned'] = 'Yes'
+    
+    # Check if the RM covers provinces outside their base province
+    rm_evaluation['cross_province'] = rm_evaluation.apply(lambda row: 'Yes' if row['RM_Base Province'] != row['省份'] else 'No', axis=1)
+    
+    # Calculate cross_province_all
+    cross_province_all = rm_evaluation.groupby('RM_POS')['cross_province'].apply(lambda x: 'Yes' if 'Yes' in x.values else 'No').reset_index()
+    cross_province_all.columns = ['RM_POS', 'cross_province_all']
+    
+    # Merge cross_province_all into rm_evaluation
+    rm_evaluation = rm_evaluation.merge(cross_province_all, on='RM_POS', how='left')
+    
+    # Check if a province has more than 2 different RM_POS
+    province_rm_count = rm_evaluation.groupby('省份')['RM_POS'].nunique().reset_index()
+    province_rm_count['multiple_rms'] = province_rm_count['RM_POS'].apply(lambda x: 'Yes' if x >= 2 else 'No')
+    
+    # Merge the multiple_rms information into rm_evaluation
+    rm_evaluation = rm_evaluation.merge(province_rm_count[['省份', 'multiple_rms']], on='省份', how='left')
+    
+    return rm_evaluation[['RM_POS', 'RM_Name', 'RM_Base City', 'RM_Base Province', '省份', 'R6M Sales Actual', '医院潜力', 
+                          'num_provinces_covered', 'top_sales_province', 'top_potential_province', 'base_province_aligned', 'cross_province', 'cross_province_all', 'multiple_rms']]
