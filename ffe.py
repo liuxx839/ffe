@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 from ffe_groundrules import evaluate_mr_city_coverage, check_personnel_deployment, evaluate_dm_deployment, evaluate_rm_deployment, calculate_pt_group_metrics, evaluate_mr_performance,evaluate_dm_city_coverage,evaluate_rm_coverage
 
+st.set_page_config(layout="wide")
+
 # Load and preprocess data
 def load_data(file):
     df = pd.read_excel(file)
