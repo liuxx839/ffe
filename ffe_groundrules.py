@@ -229,3 +229,49 @@ def evaluate_mr_performance(df, pt_group_metrics):
     mr_data['Q1_Growth_Low_and_Productivity_Index_Medium'] = ((mr_data['Q1_Growth'] < mr_data['24Q1_growth_rate']) & (mr_data['Q1_Productivity_Index'].between(0.5, 0.7))).apply(lambda x: 'Yes' if x else 'No')
 
     return mr_data
+
+
+def evaluate_dm_city_coverage(df):
+    """
+    Evaluate the city coverage and base city alignment for each District Manager (DM) based on the following criteria:
+    - Calculate the sum of R6M Sales Actual and hospital potential for each DM in different cities
+    - Find the city with the highest R6M Sales Actual and the city with the highest hospital potential for each DM
+    - Check if the DM_Base City matches the city with the highest R6M Sales Actual or the city with the highest hospital potential
+    - Ensure DMs are located in adjacent geographic areas and do not cross provinces for general drug product line
+
+    Args:
+        df (pandas.DataFrame): The input DataFrame containing the required columns.
+
+    Returns:
+        pandas.DataFrame: A DataFrame containing the DM information, city, top cities, and base city alignment evaluation.
+    """
+
+    # Extract the required columns for each DM
+    dm_data = df[['DM_POS', 'DM_Base City', 'DM_Base Province', '城市', 'R6M Sales Actual', '医院潜力']].copy()
+
+    # Calculate the sum of R6M Sales Actual and hospital potential for each DM in different cities
+    dm_city_summary = dm_data.groupby(['DM_POS', 'DM_Base City', 'DM_Base Province', '城市'])[['R6M Sales Actual', '医院潜力']].sum().reset_index()
+
+    # Find the city with the highest R6M Sales Actual and the city with the highest hospital potential for each DM
+    dm_top_sales_city = dm_city_summary.loc[dm_city_summary.groupby('DM_POS')['R6M Sales Actual'].idxmax()][['DM_POS', '城市']]
+    dm_top_sales_city.columns = ['DM_POS', 'top_sales_city']
+
+    dm_top_potential_city = dm_city_summary.loc[dm_city_summary.groupby('DM_POS')['医院潜力'].idxmax()][['DM_POS', '城市']]
+    dm_top_potential_city.columns = ['DM_POS', 'top_potential_city']
+
+    # Merge the top cities and base city information
+    dm_evaluation = dm_top_sales_city.merge(dm_top_potential_city, on='DM_POS', how='left')
+
+    # Ensure 'DM_Base City' and 'DM_Base Province' columns exist in dm_evaluation DataFrame
+    dm_evaluation['DM_Base City'] = df['DM_Base City']
+    dm_evaluation['DM_Base Province'] = df['DM_Base Province']
+
+    # Evaluate the base city alignment
+    dm_evaluation['base_city_aligned'] = 'No'
+    dm_evaluation.loc[dm_evaluation['DM_Base City'] == dm_evaluation['top_sales_city'], 'base_city_aligned'] = 'Yes'
+    dm_evaluation.loc[dm_evaluation['DM_Base City'] == dm_evaluation['top_potential_city'], 'base_city_aligned'] = 'Yes'
+
+    # Ensure DMs are located in adjacent geographic areas and do not cross provinces for general drug product line
+    dm_evaluation = dm_evaluation[dm_evaluation['DM_Base Province'] == dm_evaluation['top_sales_city'].str.extract(r'(.+省)').iloc[:, 0]]
+
+    return dm_evaluation[['DM_POS', 'DM_Base City', 'DM_Base Province', 'top_sales_city', 'top_potential_city', 'base_city_aligned']]
