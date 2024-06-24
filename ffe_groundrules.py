@@ -16,10 +16,10 @@ def evaluate_mr_city_coverage(df):
     """
 
     # Extract the required columns for each MR
-    mr_data = df[['MR_Pos', 'MR_Name', 'MR_Base City', '省份', '城市', '24Q2 Final Target', '医院潜力']].copy()
+    mr_data = df[['MR_Pos', 'MR_Name', 'MR_Base City', '省份', '城市', 'R6M Sales Actual', '医院潜力']].copy()
 
     # Calculate the sum of 24Q2 Final Target and hospital potential for each MR in different cities
-    mr_city_summary = mr_data.groupby(['MR_Pos', 'MR_Name', '省份', '城市', 'MR_Base City'])[['24Q2 Final Target', '医院潜力']].sum().reset_index()
+    mr_city_summary = mr_data.groupby(['MR_Pos', 'MR_Name', '省份', '城市', 'MR_Base City'])[['R6M Sales Actual', '医院潜力']].sum().reset_index()
 
     # Count the number of cities covered by each MR
     mr_city_count = mr_city_summary.groupby('MR_Pos')['城市'].nunique().reset_index()
@@ -27,7 +27,7 @@ def evaluate_mr_city_coverage(df):
     mr_city_count['multi_city_coverage'] = mr_city_count['num_cities_covered'].apply(lambda x: 'Yes' if x > 3 else 'No')
 
     # Find the city with the highest 24Q2 Final Target and the city with the highest hospital potential for each MR
-    mr_top_sales_city = mr_city_summary.loc[mr_city_summary.groupby('MR_Pos')['24Q2 Final Target'].idxmax()][['MR_Pos', '城市']]
+    mr_top_sales_city = mr_city_summary.loc[mr_city_summary.groupby('MR_Pos')['R6M Sales Actual'].idxmax()][['MR_Pos', '城市']]
     mr_top_sales_city.columns = ['MR_Pos', 'top_sales_city']
 
     mr_top_potential_city = mr_city_summary.loc[mr_city_summary.groupby('MR_Pos')['医院潜力'].idxmax()][['MR_Pos', '城市']]
@@ -43,8 +43,7 @@ def evaluate_mr_city_coverage(df):
     mr_evaluation.loc[mr_evaluation['MR_Base City'] == mr_evaluation['top_sales_city'], 'base_city_aligned'] = 'Yes'
     mr_evaluation.loc[mr_evaluation['MR_Base City'] == mr_evaluation['top_potential_city'], 'base_city_aligned'] = 'Yes'
 
-    return mr_evaluation[['MR_Pos', 'MR_Name', 'MR_Base City','省份', '城市', '24Q2 Final Target', '医院潜力', 'num_cities_covered', 'multi_city_coverage', 'top_sales_city', 'top_potential_city', 'base_city_aligned']]
-
+    return mr_evaluation[['MR_Pos', 'MR_Name', 'MR_Base City','省份', '城市', 'R6M Sales Actual', '医院潜力', 'num_cities_covered', 'multi_city_coverage', 'top_sales_city', 'top_potential_city', 'base_city_aligned']]
 
 def check_personnel_deployment(df):
     """
